@@ -126,6 +126,7 @@ function createDb() {
 }
 
 const db = createDb();
+const distDir = path.join(__dirname, "../dist");
 const app = express();
 
 const allowedOrigins = (process.env.CORS_ORIGIN || "")
@@ -140,7 +141,15 @@ app.use(
 );
 app.use(express.json());
 
+// Serve built frontend if dist folder exists
+if (fs.existsSync(distDir)) {
+  app.use(express.static(distDir));
+}
+
 app.get("/", (_req, res) => {
+  if (fs.existsSync(distDir)) {
+    return res.sendFile(path.join(distDir, "index.html"));
+  }
   res.json({ service: "otib-api", ok: true });
 });
 

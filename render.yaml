@@ -3,8 +3,10 @@ services:
     name: otib-api
     runtime: node
     rootDir: .
-    buildCommand: npm install
+    buildCommand: npm install && VITE_BASE=/ npm run build
     startCommand: npm run server
     envVars:
       - key: CORS_ORIGIN
         value: https://lionfrnd-pyd.github.io
+      - key: VITE_BASE
+        value: /

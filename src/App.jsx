@@ -1,56 +1,108 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 
-function evaluateScore(sales, traffic, inventory) {
-  const salesScore = Math.min(40, (sales / 80) * 40);
-  const trafficScore = Math.min(35, (traffic / 900) * 35);
-  const inventoryScore = Math.min(25, (inventory / 14) * 25);
+const initialPosts = [
+  {
+    id: 1,
+    title: "접이식 의자 2개",
+    category: "가구",
+    price: 18000,
+    floor: "8F",
+    pickupSpot: "8층 엘리베이터 앞",
+    seller: "디자인팀 민수",
+    status: "available",
+    postedAt: "10분 전",
+    description: "회의실 정리하면서 나온 제품입니다. 사용감 적고 바로 거래 가능해요.",
+  },
+  {
+    id: 2,
+    title: "유선 기계식 키보드",
+    category: "전자기기",
+    price: 35000,
+    floor: "12F",
+    pickupSpot: "12층 카페 라운지",
+    seller: "개발팀 지연",
+    status: "reserved",
+    postedAt: "25분 전",
+    description: "청축이라 타건감 좋아요. 점심시간 직거래 선호합니다.",
+  },
+  {
+    id: 3,
+    title: "텀블러 500ml",
+    category: "생활",
+    price: 5000,
+    floor: "5F",
+    pickupSpot: "5층 출입게이트",
+    seller: "재무팀 혜린",
+    status: "available",
+    postedAt: "1시간 전",
+    description: "새 제품이고 색상은 아이보리입니다.",
+  },
+];
 
-  const total = Math.round(salesScore + trafficScore + inventoryScore);
+const categories = ["전체", "가구", "전자기기", "생활", "도서", "기타"];
+const floors = ["전체", "3F", "5F", "8F", "10F", "12F", "15F"];
 
-  if (total >= 75) {
-    return {
-      total,
-      level: "good",
-      label: "안정 운영",
-      actions: [
-        "핵심 SKU 품절률을 주 1회 점검하세요.",
-        "고객 피크 타임에 프로모션 시인성을 강화하세요.",
-      ],
-    };
-  }
-
-  if (total >= 50) {
-    return {
-      total,
-      level: "mid",
-      label: "개선 필요",
-      actions: [
-        "매출 상위 SKU 중심으로 진열 우선순위를 조정하세요.",
-        "체류시간이 낮은 시간대의 행사 구성을 점검하세요.",
-      ],
-    };
-  }
-
-  return {
-    total,
-    level: "low",
-    label: "긴급 점검",
-    actions: [
-      "재고 커버리지와 발주 리드타임을 즉시 재검토하세요.",
-      "유동인구 대비 전환율이 낮은 원인을 현장 관찰로 확인하세요.",
-    ],
-  };
+function formatPrice(value) {
+  return `${value.toLocaleString("ko-KR")}원`;
 }
 
 export default function App() {
-  const [sales, setSales] = useState("");
-  const [traffic, setTraffic] = useState("");
-  const [inventory, setInventory] = useState("");
-  const [result, setResult] = useState(null);
+  const [posts, setPosts] = useState(initialPosts);
+  const [query, setQuery] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("전체");
+  const [selectedFloor, setSelectedFloor] = useState("전체");
+  const [showAvailableOnly, setShowAvailableOnly] = useState(true);
+  const [form, setForm] = useState({
+    title: "",
+    category: "생활",
+    price: "",
+    floor: "8F",
+    pickupSpot: "",
+    seller: "",
+    description: "",
+  });
 
-  const onSubmit = (event) => {
+  const filteredPosts = useMemo(() => {
+    return posts.filter((post) => {
+      const matchQuery =
+        post.title.includes(query) ||
+        post.description.includes(query) ||
+        post.seller.includes(query);
+      const matchCategory =
+        selectedCategory === "전체" || post.category === selectedCategory;
+      const matchFloor = selectedFloor === "전체" || post.floor === selectedFloor;
+      const matchStatus = !showAvailableOnly || post.status === "available";
+      return matchQuery && matchCategory && matchFloor && matchStatus;
+    });
+  }, [posts, query, selectedCategory, selectedFloor, showAvailableOnly]);
+
+  const availableCount = posts.filter((post) => post.status === "available").length;
+
+  const onCreatePost = (event) => {
     event.preventDefault();
-    setResult(evaluateScore(Number(sales), Number(traffic), Number(inventory)));
+    const newPost = {
+      id: Date.now(),
+      title: form.title,
+      category: form.category,
+      price: Number(form.price),
+      floor: form.floor,
+      pickupSpot: form.pickupSpot,
+      seller: form.seller,
+      status: "available",
+      postedAt: "방금 전",
+      description: form.description,
+    };
+
+    setPosts((prev) => [newPost, ...prev]);
+    setForm({
+      title: "",
+      category: "생활",
+      price: "",
+      floor: "8F",
+      pickupSpot: "",
+      seller: "",
+      description: "",
+    });
   };
 
   return (
@@ -60,71 +112,196 @@ export default function App() {
 
       <main className="container">
         <header className="hero">
-          <p className="eyebrow">OFFTRADE INBUILDING</p>
-          <h1>매장 운영 상태를 30초 안에 확인하세요</h1>
+          <p className="eyebrow">OFFLINE TRADE IN BUILDING</p>
+          <h1>동네 대신, 우리 빌딩 안에서 직거래</h1>
           <p className="hero-text">
-            일 매출, 유동인구, 재고 커버리지를 입력하면 운영 준비도를 점수와 액션 아이템으로
-            즉시 보여줍니다.
+            같은 건물 구성원끼리 빠르게 올리고 같은 층 혹은 공용 라운지에서 만나 거래하는
+            내부 오프라인 마켓 MVP입니다.
           </p>
+
+          <section className="stats">
+            <article>
+              <strong>{posts.length}</strong>
+              <span>전체 게시글</span>
+            </article>
+            <article>
+              <strong>{availableCount}</strong>
+              <span>거래 가능</span>
+            </article>
+            <article>
+              <strong>{floors.length - 1}</strong>
+              <span>참여 층</span>
+            </article>
+          </section>
         </header>
 
-        <section className="grid">
-          <article className="card">
-            <h2>운영 준비도 계산기</h2>
-            <form className="form" onSubmit={onSubmit}>
+        <section className="layout">
+          <article className="card filter-card">
+            <h2>거래글 찾기</h2>
+            <div className="filter-grid">
               <label>
-                일 매출 (만원)
+                검색
                 <input
-                  type="number"
-                  min="0"
-                  step="1"
-                  required
-                  value={sales}
-                  onChange={(event) => setSales(event.target.value)}
+                  type="text"
+                  placeholder="상품명, 설명, 작성자"
+                  value={query}
+                  onChange={(event) => setQuery(event.target.value)}
                 />
               </label>
+
               <label>
-                일 유동인구 (명)
-                <input
-                  type="number"
-                  min="0"
-                  step="1"
-                  required
-                  value={traffic}
-                  onChange={(event) => setTraffic(event.target.value)}
-                />
+                카테고리
+                <select
+                  value={selectedCategory}
+                  onChange={(event) => setSelectedCategory(event.target.value)}
+                >
+                  {categories.map((category) => (
+                    <option key={category} value={category}>
+                      {category}
+                    </option>
+                  ))}
+                </select>
               </label>
+
               <label>
-                재고 커버리지 (일)
-                <input
-                  type="number"
-                  min="0"
-                  step="1"
-                  required
-                  value={inventory}
-                  onChange={(event) => setInventory(event.target.value)}
-                />
+                거래 층
+                <select
+                  value={selectedFloor}
+                  onChange={(event) => setSelectedFloor(event.target.value)}
+                >
+                  {floors.map((floor) => (
+                    <option key={floor} value={floor}>
+                      {floor}
+                    </option>
+                  ))}
+                </select>
               </label>
-              <button type="submit">점수 계산</button>
-            </form>
+            </div>
+
+            <label className="checkbox-row">
+              <input
+                type="checkbox"
+                checked={showAvailableOnly}
+                onChange={(event) => setShowAvailableOnly(event.target.checked)}
+              />
+              거래 가능한 게시글만 보기
+            </label>
+
+            <p className="result-text">검색 결과 {filteredPosts.length}건</p>
           </article>
 
-          <article className="card result-card" aria-live="polite">
-            <h2>결과</h2>
-            {!result && <p className="hint">값을 입력하고 계산 버튼을 눌러주세요.</p>}
-            {result && (
-              <>
-                <p className={`badge ${result.level}`}>{result.label}</p>
-                <p className="score">{result.total}점</p>
-                <p>추천 액션</p>
-                <ul>
-                  {result.actions.map((item) => (
-                    <li key={item}>{item}</li>
-                  ))}
-                </ul>
-              </>
-            )}
+          <article className="card form-card">
+            <h2>거래글 등록</h2>
+            <form className="form" onSubmit={onCreatePost}>
+              <label>
+                상품명
+                <input
+                  type="text"
+                  required
+                  value={form.title}
+                  onChange={(event) => setForm((prev) => ({ ...prev, title: event.target.value }))}
+                />
+              </label>
+
+              <div className="split-grid">
+                <label>
+                  카테고리
+                  <select
+                    value={form.category}
+                    onChange={(event) =>
+                      setForm((prev) => ({ ...prev, category: event.target.value }))
+                    }
+                  >
+                    {categories.slice(1).map((category) => (
+                      <option key={category} value={category}>
+                        {category}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label>
+                  희망가(원)
+                  <input
+                    type="number"
+                    min="0"
+                    required
+                    value={form.price}
+                    onChange={(event) => setForm((prev) => ({ ...prev, price: event.target.value }))}
+                  />
+                </label>
+              </div>
+
+              <div className="split-grid">
+                <label>
+                  거래 층
+                  <select
+                    value={form.floor}
+                    onChange={(event) => setForm((prev) => ({ ...prev, floor: event.target.value }))}
+                  >
+                    {floors.slice(1).map((floor) => (
+                      <option key={floor} value={floor}>
+                        {floor}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label>
+                  작성자
+                  <input
+                    type="text"
+                    required
+                    value={form.seller}
+                    onChange={(event) => setForm((prev) => ({ ...prev, seller: event.target.value }))}
+                  />
+                </label>
+              </div>
+
+              <label>
+                거래 장소
+                <input
+                  type="text"
+                  required
+                  placeholder="예: 8층 엘리베이터 앞"
+                  value={form.pickupSpot}
+                  onChange={(event) => setForm((prev) => ({ ...prev, pickupSpot: event.target.value }))}
+                />
+              </label>
+
+              <label>
+                설명
+                <textarea
+                  rows="3"
+                  required
+                  value={form.description}
+                  onChange={(event) =>
+                    setForm((prev) => ({ ...prev, description: event.target.value }))
+                  }
+                />
+              </label>
+
+              <button type="submit">거래글 올리기</button>
+            </form>
           </article>
+        </section>
+
+        <section className="feed">
+          {filteredPosts.map((post) => (
+            <article key={post.id} className="feed-card">
+              <div className="feed-top">
+                <span className={`status ${post.status}`}>
+                  {post.status === "available" ? "거래 가능" : "예약중"}
+                </span>
+                <span className="time">{post.postedAt}</span>
+              </div>
+              <h3>{post.title}</h3>
+              <p className="price">{formatPrice(post.price)}</p>
+              <p className="meta">{post.category} · {post.floor} · {post.pickupSpot}</p>
+              <p className="desc">{post.description}</p>
+              <p className="seller">판매자: {post.seller}</p>
+            </article>
+          ))}
         </section>
       </main>
     </>

@@ -128,8 +128,21 @@ function createDb() {
 const db = createDb();
 const app = express();
 
-app.use(cors());
+const allowedOrigins = (process.env.CORS_ORIGIN || "")
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
+app.use(
+  cors({
+    origin: allowedOrigins.length === 0 ? true : allowedOrigins,
+  })
+);
 app.use(express.json());
+
+app.get("/", (_req, res) => {
+  res.json({ service: "otib-api", ok: true });
+});
 
 app.get("/api/health", (_req, res) => {
   res.json({ ok: true, storage: "sqlite" });
@@ -179,7 +192,7 @@ app.post("/api/posts", (req, res) => {
   return res.status(201).json(normalizePost(row));
 });
 
-const PORT = 4000;
+const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {
   console.log(`OTIB API server running on http://localhost:${PORT}`);
 });

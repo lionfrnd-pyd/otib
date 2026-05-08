@@ -47,7 +47,29 @@ npm run preview
 2. 저장소의 Settings > Pages에서 Source를 GitHub Actions로 선택합니다.
 3. main 브랜치 push 시 [.github/workflows/deploy-pages.yml](.github/workflows/deploy-pages.yml) 워크플로우가 빌드 후 배포합니다.
 
-참고: GitHub Pages는 정적 호스팅이므로 SQLite 서버는 포함되지 않습니다. Pages에서는 데모 모드로 동작합니다.
+참고: GitHub Pages는 정적 호스팅이므로 SQLite 서버는 별도 배포가 필요합니다.
+
+## Pages에서 실제 DB 모드 켜기
+
+1. 백엔드 API 서버를 Render 또는 Railway에 배포합니다.
+2. 배포된 API URL을 복사합니다. 예: `https://otib-api.onrender.com`
+3. GitHub 저장소에서 Settings > Secrets and variables > Actions > Variables로 이동합니다.
+4. Repository variable 추가
+	- Name: `VITE_API_BASE`
+	- Value: `https://otib-api.onrender.com`
+5. API 서버 환경변수 설정
+	- `CORS_ORIGIN=https://lionfrnd-pyd.github.io`
+6. main 브랜치에 push하면 Pages 워크플로우가 새 API 주소로 빌드되어 실제 DB 저장 모드로 동작합니다.
+
+## API 서버 배포 예시 (Render)
+
+1. Render에서 New + Web Service 선택
+2. GitHub 저장소 연결 후 루트 경로를 `OffTradeInBuilding`으로 지정
+3. Build Command: `npm install`
+4. Start Command: `npm run server`
+5. Environment Variables
+	- `CORS_ORIGIN=https://lionfrnd-pyd.github.io`
+6. 배포 완료 후 `/api/health` 응답 확인
 
 ## 주요 파일
 

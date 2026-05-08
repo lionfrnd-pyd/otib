@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: otib-api
+    runtime: node
+    rootDir: .
+    buildCommand: npm install
+    startCommand: npm run server
+    envVars:
+      - key: CORS_ORIGIN
+        value: https://lionfrnd-pyd.github.io

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 
 function evaluateScore(sales, traffic, inventory) {
   const salesScore = Math.min(40, (sales / 80) * 40);

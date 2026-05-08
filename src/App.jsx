@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 
 const initialPosts = [
   {
@@ -41,6 +41,7 @@ const initialPosts = [
 
 const categories = ["전체", "가구", "전자기기", "생활", "도서", "기타"];
 const floors = ["전체", "3F", "5F", "8F", "10F", "12F", "15F"];
+const API_BASE = import.meta.env.VITE_API_BASE || "";
 
 function formatPrice(value) {
   return `${value.toLocaleString("ko-KR")}원`;
@@ -52,6 +53,7 @@ export default function App() {
   const [selectedCategory, setSelectedCategory] = useState("전체");
   const [selectedFloor, setSelectedFloor] = useState("전체");
   const [showAvailableOnly, setShowAvailableOnly] = useState(true);
+  const [storageMode, setStorageMode] = useState("loading");
   const [form, setForm] = useState({
     title: "",
     category: "생활",
@@ -61,6 +63,34 @@ export default function App() {
     seller: "",
     description: "",
   });
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadPosts() {
+      try {
+        const response = await fetch(`${API_BASE}/api/posts`);
+        if (!response.ok) {
+          throw new Error("Failed to fetch posts");
+        }
+        const data = await response.json();
+        if (isMounted) {
+          setPosts(data);
+          setStorageMode("database");
+        }
+      } catch (_error) {
+        if (isMounted) {
+          setPosts(initialPosts);
+          setStorageMode("demo");
+        }
+      }
+    }
+
+    loadPosts();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const filteredPosts = useMemo(() => {
     return posts.filter((post) => {
@@ -78,22 +108,55 @@ export default function App() {
 
   const availableCount = posts.filter((post) => post.status === "available").length;
 
-  const onCreatePost = (event) => {
+  const onCreatePost = async (event) => {
     event.preventDefault();
-    const newPost = {
-      id: Date.now(),
+    const payload = {
       title: form.title,
       category: form.category,
       price: Number(form.price),
       floor: form.floor,
       pickupSpot: form.pickupSpot,
       seller: form.seller,
-      status: "available",
-      postedAt: "방금 전",
       description: form.description,
     };
 
-    setPosts((prev) => [newPost, ...prev]);
+    if (storageMode === "database") {
+      try {
+        const response = await fetch(`${API_BASE}/api/posts`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(payload),
+        });
+        if (!response.ok) {
+          throw new Error("Failed to create post");
+        }
+        const created = await response.json();
+        setPosts((prev) => [created, ...prev]);
+      } catch (_error) {
+        setPosts((prev) => [
+          {
+            id: Date.now(),
+            ...payload,
+            status: "available",
+            postedAt: "방금 전",
+          },
+          ...prev,
+        ]);
+      }
+    } else {
+      setPosts((prev) => [
+        {
+          id: Date.now(),
+          ...payload,
+          status: "available",
+          postedAt: "방금 전",
+        },
+        ...prev,
+      ]);
+    }
+
     setForm({
       title: "",
       category: "생활",
@@ -118,6 +181,14 @@ export default function App() {
             같은 건물 구성원끼리 빠르게 올리고 같은 층 혹은 공용 라운지에서 만나 거래하는
             내부 오프라인 마켓 MVP입니다.
           </p>
+          {storageMode === "database" && (
+            <p className="mode mode-live">현재 모드: SQLite DB 저장</p>
+          )}
+          {storageMode === "demo" && (
+            <p className="mode mode-demo">
+              현재 모드: 데모 저장. 서버를 켜면 DB에 영구 저장됩니다.
+            </p>
+          )}
 
           <section className="stats">
             <article>

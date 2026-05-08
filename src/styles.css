@@ -96,6 +96,20 @@ h1 {
   line-height: 1.6;
 }
 
+.mode {
+  margin: 10px 0 0;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.mode-live {
+  color: #0f766e;
+}
+
+.mode-demo {
+  color: #9a3412;
+}
+
 .stats {
   margin-top: 18px;
   display: grid;

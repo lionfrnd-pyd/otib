@@ -2,6 +2,7 @@ services:
   - type: web
     name: otib-api
     runtime: node
+    nodeVersion: 22.11.0
     rootDir: .
     buildCommand: npm install && VITE_BASE=/ npm run build
     startCommand: npm run server
